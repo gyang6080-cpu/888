@@ -636,7 +636,28 @@ jobs:
           else
             echo "KSU_LATEST_COMMIT_DATE=未知" >> $GITHUB_ENV
           fi
-
+      - name: 把 ReSukiSU 改成 YG 并去除 dirty
+        if: inputs.ksu_variant == 'ReSukiSU' && inputs.ksu_mode != '禁用KSU'
+        working-directory: ${{ env.KERNEL_ROOT }}
+        run: |
+          echo "正在把 ReSukiSU 替换为 YG，并去除 dirty..."
+          if [ -d "KernelSU" ]; then
+            cd KernelSU
+            if [ -f "kernel/Kbuild" ]; then
+              sed -i 's/REPO_NAME := ReSukiSU/REPO_NAME := YG/' kernel/Kbuild
+              echo "已修改 kernel/Kbuild 中的 REPO_NAME"
+              grep "REPO_NAME" kernel/Kbuild || true
+            fi
+            find . -type f \( -name "*.c" -o -name "*.h" -o -name "*.kt" -o -name "*.xml" -o -name "*.rs" -o -name "*.gradle*" -o -name "*.kts" -o -name "Kconfig" -o -name "Makefile" -o -name "Kbuild" -o -name "*.sh" \) -exec sed -i -e 's/ReSukiSU/YG/g' -e 's/resukisu/yg/g' -e 's/RESUKISU/YG/g' {} +
+            git config user.name "YG Builder"
+            git config user.email "yg@localhost"
+            git add -A
+            git commit -m "chore: rebrand to YG" --allow-empty || true
+            echo "名字已替换为 YG，dirty 已消除"
+            cd ..
+          else
+            echo "未找到 KernelSU 目录"
+          fi
       - name: 配置 SukiSU 管理器信息
         if: (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'SukiSU(40726)' || inputs.ksu_variant == 'SukiSU(40548)') && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
